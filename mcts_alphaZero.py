@@ -37,17 +37,15 @@ class TreeNode(object):
         return max(self._children.items(), key=lambda act_node: act_node[1].get_value(c_puct))
 
     def update(self, leaf_value):
-       
+       """leaf evaluation(자식노드)으로부터 노드 값을 업데이트 
+        leaf_value: 현재 플레이어의 상황에서 서브트리의 값    """ 
         # Count visit.
         self._n_visits += 1
         # Update Q, a running average of values for all visits.
         self._Q += 1.0*(leaf_value - self._Q) / self._n_visits
 
     def update_recursive(self, leaf_value):
-        """leaf evaluation(자식노드)으로부터 노드 값을 업데이트 
-        leaf_value: 현재 플레이어의 상황에서 서브트리의 값    """ 
-        
-        # If it is not root, this node's parent should be updated first.
+        # root가 아니면 , 반드시 이 노드의 부모노드가 먼저 생성되야함
         if self._parent:
             self._parent.update_recursive(-leaf_value)
         self.update(leaf_value)
