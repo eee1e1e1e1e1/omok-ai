@@ -8,9 +8,9 @@ def softmax(x):
 
 class TreeNode(object):
     """ MCTS 트리의 노드.
-    Q : its own value
-    P : prior probability
-    u : visit-count-adjusted prior score
+    Q : 자신의 값 
+    P : 사전 확률(현재 정보를 기초로 정한 초기 확률 ex: 동전의 앞면이 나올 확률 ½)
+    u : visit-count 사전 점수 
     """
     def __init__(self, parent, prior_p):
         self._parent = parent
@@ -21,47 +21,47 @@ class TreeNode(object):
         self._P = prior_p
 
     def expand(self, action_priors, forbidden_moves, is_you_black):
-        """Expand tree by creating new children.
-        action_priors: a list of tuples of actions and their prior probability according to the policy function.
-        """
+        """Expansion  
+        자식 노드를 생성하여 트리 확장 
+        action_priors: 함수에 따라 사전확률과 액션들의 튜플의 리스트   """ 
         for action, prob in action_priors:
             # 흑돌일 때 금수 위치는 트리 탐색을 하지 않도록 
             if is_you_black and action in forbidden_moves : continue
             if action not in self._children : self._children[action] = TreeNode(self, prob)
 
     def select(self, c_puct):
-        """Select action among children that gives maximum action value Q plus bonus u(P).
-        Return: A tuple of (action, next_node)
-        """
+        """Selection 
+        Q값과 u값을 더하여 자식노드에서 다음 액션을 선택 
+        Return: 다음 노드의 튜플 
+        """ 
         return max(self._children.items(), key=lambda act_node: act_node[1].get_value(c_puct))
 
     def update(self, leaf_value):
-        """Update node values from leaf evaluation.
-        leaf_value: the value of subtree evaluation from the current player's perspective.
-        """
+       
         # Count visit.
         self._n_visits += 1
         # Update Q, a running average of values for all visits.
         self._Q += 1.0*(leaf_value - self._Q) / self._n_visits
 
     def update_recursive(self, leaf_value):
-        """Like a call to update(), but applied recursively for all ancestors."""
+        """leaf evaluation(자식노드)으로부터 노드 값을 업데이트 
+        leaf_value: 현재 플레이어의 상황에서 서브트리의 값    """ 
+        
         # If it is not root, this node's parent should be updated first.
         if self._parent:
             self._parent.update_recursive(-leaf_value)
         self.update(leaf_value)
 
     def get_value(self, c_puct):
-        """Calculate and return the value for this node.
-        It is a combination of leaf evaluations Q, and this node's prior adjusted for its visit count, u.
-        c_puct: a number in (0, inf) controlling the relative impact of value Q, and prior probability P, on this node's score.
-        """
+        """노드의 값을 return 및 계산 
+       leaf evaluations Q와 visit count u에 따라 사전 조정된 노드의 합.  
+        c_puct: value Q의 값과 사전 확률 P가 이 노드의 점수에 미치는 영향을 통제하는 숫자.  """ 
         self._u = (c_puct * self._P *
                    np.sqrt(self._parent._n_visits) / (1 + self._n_visits))
         return self._Q + self._u
 
     def is_leaf(self):
-        """Check if leaf node (i.e. no nodes below this have been expanded)."""
+       """leaf node 확인 ( 이 아래에 확장된 노드가 있는지)""" 
         return self._children == {}
 
     def is_root(self):
